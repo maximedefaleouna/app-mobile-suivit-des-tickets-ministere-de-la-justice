@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import 'home_screen.dart';
+import 'register_screen.dart';
+import 'admin_dashboard_screen.dart';
+import 'technician_dashboard_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -31,9 +34,34 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _loading = false);
 
     if (result['success'] == true) {
+      // Get user role from result
+      final userInfo = result['user'] as Map<String, dynamic>?;
+      final userRole = userInfo?['role'] as String?;
+
+      // DEBUG: Afficher les infos
+      print('=== LOGIN SUCCESS ===');
+      print('User Info: $userInfo');
+      print('User Role: $userRole');
+      print('=====================');
+
+      // Navigate based on role
+      Widget destinationScreen;
+
+      if (userRole == 'ADMIN') {
+        print('NAVIGATION: Admin Dashboard');
+        destinationScreen = const AdminDashboardScreen();
+      } else if (userRole == 'TECHNICIEN') {
+        print('NAVIGATION: Technician Dashboard');
+        destinationScreen = const TechnicianDashboardScreen();
+      } else {
+        print('NAVIGATION: Home Screen (role=$userRole)');
+        // CITOYEN
+        destinationScreen = const HomeScreen();
+      }
+
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
+        MaterialPageRoute(builder: (_) => destinationScreen),
       );
     } else {
       setState(() {
@@ -139,6 +167,27 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                               ),
                       ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Lien vers inscription
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text('Pas encore de compte ?'),
+                        TextButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const RegisterScreen(),
+                              ),
+                            );
+                          },
+                          child: const Text("S'inscrire"),
+                        ),
+                      ],
                     ),
                   ],
                 ),

@@ -228,7 +228,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
   Widget _buildInfoCard({
     required IconData icon,
     required String label,
-    required String value,
+    required String? value,
     Color? color,
   }) {
     return Card(
@@ -255,7 +255,7 @@ class _TicketDetailScreenState extends State<TicketDetailScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              value,
+              value ?? 'Non spécifié',
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
           ],

@@ -118,4 +118,38 @@ class TicketService {
       throw Exception('Impossible d\'ajouter un commentaire.');
     }
   }
+
+  Future<Map<String, dynamic>> getDashboardData() async {
+    try {
+      final response = await http.get(
+        Uri.parse('http://192.168.1.66:8000/api/dashboard/'),
+        headers: await _headers(),
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception('Erreur lors du chargement du dashboard');
+      }
+    } catch (e) {
+      throw Exception('Impossible de charger le dashboard.');
+    }
+  }
+
+  Future<Map<String, dynamic>> getStatistics() async {
+    try {
+      final response = await http.get(
+        Uri.parse('http://192.168.1.66:8000/api/statistics/'),
+        headers: await _headers(),
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        throw Exception('Erreur lors du chargement des statistiques');
+      }
+    } catch (e) {
+      throw Exception('Impossible de charger les statistiques.');
+    }
+  }
 }

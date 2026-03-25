@@ -1,10 +1,12 @@
-from rest_framework import viewsets, status, filters
-from rest_framework.decorators import action
+from rest_framework import viewsets, status, filters, permissions
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 from django.utils import timezone
 from django.db import models
+from django.db.models import Count, Q, Avg, F
+from datetime import timedelta
 
 from .models import Ticket, Commentaire, HistoriqueStatut
 from .serializers import (
@@ -135,3 +137,135 @@ class TicketViewSet(viewsets.ModelViewSet):
                 {'erreur': 'Technicien introuvable.'},
                 status=status.HTTP_404_NOT_FOUND
             )
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def statistics_view(request):
+    """
+    Statistiques générales pour le tableau de bord
+    """
+    user = request.user
+    
+    # Filtrer selon le rôle
+    if user.role == 'CITOYEN':
+        queryset = Ticket.objects.filter(auteur=user)
+    elif user.role == 'TECHNICIEN':
+        queryset = Ticket.objects.filter(
+            Q(assigned_a=user) | Q(statut='OUVERT')
+        )
+    else:  # ADMIN
+        queryset = Ticket.objects.all()
+    
+    # Statistiques par statut
+    stats_by_status = queryset.values('statut').annotate(
+        count=Count('id')
+    ).order_by('statut')
+    
+    # Statistiques par type
+    stats_by_type = queryset.values('type_ticket').annotate(
+        count=Count('id')
+    ).order_by('type_ticket')
+    
+    # Statistiques par priorité
+    stats_by_priority = queryset.values('priorite').annotate(
+        count=Count('id')
+    ).order_by('priorite')
+    
+    # Temps moyen de résolution (pour les tickets résolus)
+    resolved_tickets = queryset.filter(
+        statut='RESOLU',
+        date_resolution__isnull=False
+    ).annotate(
+        resolution_time=F('date_resolution') - F('date_creation')
+    )
+    
+    avg_resolution_time = None
+    if resolved_tickets.exists():
+        total_seconds = sum(
+            t.resolution_time.total_seconds() 
+            for t in resolved_tickets
+        )
+        avg_seconds = total_seconds / resolved_tickets.count()
+        avg_resolution_time = {
+            'days': int(avg_seconds // 86400),
+            'hours': int((avg_seconds % 86400) // 3600),
+            'minutes': int((avg_seconds % 3600) // 60)
+        }
+    
+    # Évolution sur les 30 derniers jours
+    thirty_days_ago = timezone.now() - timedelta(days=30)
+    evolution = queryset.filter(
+        date_creation__gte=thirty_days_ago
+    ).annotate(
+        date=F('date_creation__date')
+    ).values('date').annotate(
+        count=Count('id')
+    ).order_by('date')
+    
+    return Response({
+        'total': queryset.count(),
+        'by_status': {item['statut']: item['count'] for item in stats_by_status},
+        'by_type': {item['type_ticket']: item['count'] for item in stats_by_type},
+        'by_priority': {item['priorite']: item['count'] for item in stats_by_priority},
+        'average_resolution_time': avg_resolution_time,
+        'evolution_last_30_days': list(evolution),
+        'resolved_count': resolved_tickets.count(),
+    })
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def dashboard_view(request):
+    """
+    Données pour le tableau de bord principal
+    """
+    user = request.user
+    
+    # Filtrer selon le rôle
+    if user.role == 'CITOYEN':
+        queryset = Ticket.objects.filter(auteur=user)
+        pending_assignments = []
+    elif user.role == 'TECHNICIEN':
+        queryset = Ticket.objects.filter(
+            Q(assigne_a=user) | Q(statut='OUVERT')
+        )
+        pending_assignments = TicketListSerializer(
+            Ticket.objects.filter(assigne_a=user, statut='EN_COURS'),
+            many=True,
+            context={'request': request}
+        ).data
+    else:  # ADMIN
+        queryset = Ticket.objects.all()
+        pending_assignments = []
+    
+    # Tickets récents
+    recent_tickets = TicketListSerializer(
+        queryset.order_by('-date_creation')[:10],
+        many=True,
+        context={'request': request}
+    ).data
+    
+    # Tickets urgents
+    urgent_tickets = TicketListSerializer(
+        queryset.filter(priorite__in=['HAUTE', 'CRITIQUE'], statut__in=['OUVERT', 'EN_COURS']).order_by('-date_creation')[:5],
+        many=True,
+        context={'request': request}
+    ).data
+    
+    # Compteurs rapides
+    quick_stats = {
+        'open': queryset.filter(statut='OUVERT').count(),
+        'in_progress': queryset.filter(statut='EN_COURS').count(),
+        'resolved': queryset.filter(statut='RESOLU').count(),
+        'closed': queryset.filter(statut='CLOS').count(),
+        'critical': queryset.filter(priorite='CRITIQUE').count(),
+    }
+    
+    return Response({
+        'recent_tickets': recent_tickets,
+        'urgent_tickets': urgent_tickets,
+        'pending_assignments': pending_assignments,
+        'quick_stats': quick_stats,
+        'user_role': user.role,
+    })
