@@ -4,7 +4,10 @@ import '../models/ticket.dart';
 import 'auth_service.dart';
 
 class TicketService {
-  static const String _base = 'http://10.0.2.2:8000/api/tickets';
+  // Pour Android Emulator: http://10.0.2.2:8000
+  // Pour iOS Simulator: http://localhost:8000
+  // Pour appareil physique: http://YOUR_IP:8000
+  static const String _base = 'http://192.168.1.66:8000/api/tickets';
   final AuthService _auth = AuthService();
 
   Future<Map<String, String>> _headers() async {

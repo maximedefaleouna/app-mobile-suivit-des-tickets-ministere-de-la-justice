@@ -18,12 +18,9 @@ from django.contrib import admin
 from .views import home
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from rest_framework_simplejwt.views import (
-    TokenObtainPairView,
-    TokenRefreshView
-)
+from rest_framework_simplejwt.views import TokenRefreshView
 from tickets.views import TicketViewSet
-from accounts.views import RegisterView, ProfileView
+from accounts.views import CustomTokenObtainPairView, RegisterView, ProfileView
 
 # Routeur DRF pour les ViewSets
 router = DefaultRouter()
@@ -35,7 +32,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
 
     # Authentification JWT
-    path('api/auth/login/', TokenObtainPairView.as_view(), name='token_obtain'),
+    path('api/auth/login/', CustomTokenObtainPairView.as_view(), name='token_obtain'),
     path('api/auth/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/auth/register/', RegisterView.as_view(), name='register'),
     path('api/auth/profil/', ProfileView.as_view(), name='profil'),

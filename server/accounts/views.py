@@ -1,8 +1,14 @@
-from rest_framework import generics, permissions
+from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.views import TokenObtainPairView
 from .models import CustomUser
-from .serializers import UserSerializer  # à créer si pas encore fait
+from .serializers import UserSerializer
+
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+    """Vue personnalisée pour obtenir les tokens JWT - accessible à tous les utilisateurs"""
+    permission_classes = [permissions.AllowAny]
 
 
 class RegisterView(generics.CreateAPIView):
