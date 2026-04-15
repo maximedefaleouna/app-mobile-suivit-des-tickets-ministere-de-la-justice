@@ -128,7 +128,7 @@ def user_detail_view(request, pk):
         if 'password' in data:
             del data['password']
         
-        serializer = UserSerializer(user, data=data, partial=False)
+        serializer = UserSerializer(user, data=data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)

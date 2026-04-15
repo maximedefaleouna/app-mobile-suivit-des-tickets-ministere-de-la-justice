@@ -14,7 +14,7 @@ from .serializers import (
     TicketListSerializer,
     CommentaireSerializer
 )
-from .permissions import IsAuteurOrReadOnly, IsTechnicienOrAdmin
+from .permissions import IsTechnicienOrAdmin, IsAdminRole
 
 
 class TicketViewSet(viewsets.ModelViewSet):
@@ -43,6 +43,15 @@ class TicketViewSet(viewsets.ModelViewSet):
     filterset_fields = ['statut', 'priorite', 'type_ticket', 'assigne_a']
     search_fields = ['titre', 'description']
     ordering_fields = ['date_creation', 'priorite', 'statut']
+
+    def get_permissions(self):
+        if self.action in ['changer_statut', 'assigner']:
+            permission_classes = [IsTechnicienOrAdmin]
+        elif self.action in ['update', 'partial_update', 'destroy']:
+            permission_classes = [IsAdminRole]
+        else:
+            permission_classes = [IsAuthenticated]
+        return [permission() for permission in permission_classes]
 
     def get_serializer_class(self):
         if self.action == 'list':
@@ -124,9 +133,18 @@ class TicketViewSet(viewsets.ModelViewSet):
                 role='TECHNICIEN'
             )
 
+            ancien_statut = ticket.statut
             ticket.assigne_a = tech
             ticket.statut = Ticket.Statut.EN_COURS
             ticket.save()
+
+            if ancien_statut != ticket.statut:
+                HistoriqueStatut.objects.create(
+                    ticket=ticket,
+                    ancien_statut=ancien_statut,
+                    nouveau_statut=ticket.statut,
+                    modifie_par=request.user,
+                )
 
             return Response(
                 TicketSerializer(ticket, context={'request': request}).data
@@ -152,7 +170,7 @@ def statistics_view(request):
         queryset = Ticket.objects.filter(auteur=user)
     elif user.role == 'TECHNICIEN':
         queryset = Ticket.objects.filter(
-            Q(assigned_a=user) | Q(statut='OUVERT')
+            Q(assigne_a=user) | Q(statut='OUVERT')
         )
     else:  # ADMIN
         queryset = Ticket.objects.all()

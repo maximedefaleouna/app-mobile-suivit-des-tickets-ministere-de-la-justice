@@ -1,23 +1,12 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../models/ticket.dart';
+import '../core/constants/app_constants.dart';
 import 'auth_service.dart';
+import '../models/ticket.dart';
 
 class TicketService {
-  // Pour Android Emulator: http://10.0.2.2:8000
-  // Pour iOS Simulator: http://localhost:8000
-  // Pour appareil physique: http://YOUR_IP:8000
-  static const String _base = 'http://192.168.1.66:8000/api/tickets';
+  String get _base => '${AppConstants.apiBaseUrl}/tickets';
   final AuthService _auth = AuthService();
-
-  Future<Map<String, String>> _headers() async {
-    final token = await _auth.getAccessToken();
-
-    return {
-      'Content-Type': 'application/json',
-      if (token != null) 'Authorization': 'Bearer $token',
-    };
-  }
 
   Future<List<Ticket>> listerTickets({String? statut, String? priorite}) async {
     try {
@@ -31,10 +20,7 @@ class TicketService {
         url += '?${Uri(queryParameters: params).query}';
       }
 
-      final response = await http.get(
-        Uri.parse(url),
-        headers: await _headers(),
-      );
+      final response = await _auth.getAuthorized(Uri.parse(url));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -54,10 +40,7 @@ class TicketService {
 
   Future<Ticket> getTicket(int id) async {
     try {
-      final response = await http.get(
-        Uri.parse('$_base/$id/'),
-        headers: await _headers(),
-      );
+      final response = await _auth.getAuthorized(Uri.parse('$_base/$id/'));
 
       if (response.statusCode == 200) {
         return Ticket.fromJson(jsonDecode(response.body));
@@ -71,27 +54,28 @@ class TicketService {
 
   Future<Ticket> creerTicket(Map<String, dynamic> data) async {
     try {
-      final response = await http.post(
+      final response = await _auth.postAuthorized(
         Uri.parse('$_base/'),
-        headers: await _headers(),
         body: jsonEncode(data),
       );
 
       if (response.statusCode == 201) {
         return Ticket.fromJson(jsonDecode(response.body));
       } else {
-        throw Exception('Erreur (${response.statusCode})');
+        final errorBody = jsonDecode(response.body);
+        throw Exception(
+          'Erreur (${response.statusCode}): ${errorBody.toString()}',
+        );
       }
     } catch (e) {
-      throw Exception('Erreur lors de la création du ticket.');
+      rethrow;
     }
   }
 
   Future<void> changerStatut(int id, String nouveauStatut) async {
     try {
-      final response = await http.patch(
+      final response = await _auth.patchAuthorized(
         Uri.parse('$_base/$id/changer_statut/'),
-        headers: await _headers(),
         body: jsonEncode({'statut': nouveauStatut}),
       );
 
@@ -105,9 +89,8 @@ class TicketService {
 
   Future<void> commenter(int id, String contenu) async {
     try {
-      final response = await http.post(
+      final response = await _auth.postAuthorized(
         Uri.parse('$_base/$id/commenter/'),
-        headers: await _headers(),
         body: jsonEncode({'contenu': contenu}),
       );
 
@@ -119,11 +102,25 @@ class TicketService {
     }
   }
 
+  Future<void> assignerTicket(int id, int technicienId) async {
+    try {
+      final response = await _auth.patchAuthorized(
+        Uri.parse('$_base/$id/assigner/'),
+        body: jsonEncode({'technicien_id': technicienId}),
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception('Erreur lors de l attribution du ticket.');
+      }
+    } catch (e) {
+      throw Exception('Impossible d attribuer le ticket.');
+    }
+  }
+
   Future<Map<String, dynamic>> getDashboardData() async {
     try {
-      final response = await http.get(
-        Uri.parse('http://192.168.1.66:8000/api/dashboard/'),
-        headers: await _headers(),
+      final response = await _auth.getAuthorized(
+        Uri.parse('${AppConstants.apiBaseUrl}/dashboard/'),
       );
 
       if (response.statusCode == 200) {
@@ -138,9 +135,8 @@ class TicketService {
 
   Future<Map<String, dynamic>> getStatistics() async {
     try {
-      final response = await http.get(
-        Uri.parse('http://192.168.1.66:8000/api/statistics/'),
-        headers: await _headers(),
+      final response = await _auth.getAuthorized(
+        Uri.parse('${AppConstants.apiBaseUrl}/statistics/'),
       );
 
       if (response.statusCode == 200) {

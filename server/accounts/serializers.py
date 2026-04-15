@@ -7,8 +7,19 @@ class UserSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = CustomUser
-        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'role', 'telephone', 'password']
-        read_only_fields = ['id']
+        fields = [
+            'id',
+            'username',
+            'email',
+            'first_name',
+            'last_name',
+            'role',
+            'telephone',
+            'password',
+            'is_active',
+            'date_joined',
+        ]
+        read_only_fields = ['id', 'is_active', 'date_joined']
     
     def create(self, validated_data):
         """Crée un utilisateur avec mot de passe haché"""
