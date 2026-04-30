@@ -5,11 +5,12 @@ class AppConstants {
   // API Configuration
   static const String _defaultApiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://192.168.1.66:8000/api',
+    defaultValue: 'https://reclammation-ticket-app.onrender.com/api',
   );
 
   static String get apiBaseUrl {
-    if (_defaultApiBaseUrl != '192.168.1.66:8000/api') {
+    if (_defaultApiBaseUrl !=
+        'https://reclammation-ticket-app.onrender.com/api') {
       return _defaultApiBaseUrl;
     }
 
@@ -18,7 +19,7 @@ class AppConstants {
     }
 
     if (Platform.isAndroid) {
-      return 'http://192.168.1.66:8000/api';
+      return 'https://reclammation-ticket-app.onrender.com/api';
     }
 
     return _defaultApiBaseUrl;
