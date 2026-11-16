@@ -1,395 +1,192 @@
-# 🏛️ Ministère de la Justice - Gestion des Réclamations
+# Plateforme de Gestion des Reclamations et Tickets - Ministere de la Justice
 
-## ✅ PROJET COMPLÈTEMENT IMPLÉMENTÉ
+Systeme d'information multiplateforme et API REST dedies a la modernisation, a la centralisation et au traitement securise des reclamations, incidents techniques et demandes de services administratifs pour le Ministere de la Justice.
 
-Application complète de gestion des réclamations pour le Ministère de la Justice et de la Législation.
+## Contexte et Genese du Projet
 
----
+Ce projet a ete concu pour repondre a un besoin operationnel identifie au niveau du Ministere de la Justice et de la Legislation.
 
-## 🎯 CONTEXTE DU PROJET
+Dans le cadre des initiatives de modernisation et de digitalisation des services publics, l'objectif est d'offrir une plateforme unifiee permettant de substituer aux circuits papier traditionnels et aux signalements disperses un dispositif numerique transparent, rapide et rigoureusement auditable.
 
-Le Ministère a lancé un processus de digitalisation pour faciliter l'accès aux services essentiels. Cette application répond aux besoins de:
-- ✅ Suivi structuré des réclamations
-- ✅ Traitement efficace des tickets
-- ✅ Transparence et traçabilité
-- ✅ Statistiques et indicateurs
-- ✅ Archivage des requêtes
+### Defis Adresses
 
----
+- Rapprochement des usagers et de l'administration : permettre aux citoyens et aux agents d'enregistrer leurs doleances ou incidents a tout moment et depuis n'importe quel terminal.
+- Reduction des delais de traitement : automatiser l'assignation des requetes aux techniciens et equipes sectorielles competentes.
+- Tracabilite et conformite institutionnelle : conserver un historique immuable de chaque etape d'instruction, garantissant la preuve et la continuite du service public.
+- Pilotage strategique par la donnee : fournir a la hierarchie ministerielle des tableaux de bord analytiques mesurant les volumes, les typologies d'incidents et le taux effectif de resolution.
 
-## 🚀 DÉMARRAGE RAPIDE
+## Architecture Technique Globale
 
-### 1. Lancer le Backend (Django)
+La solution s'articule autour d'un decouplage complet entre une API metier robuste et une interface utilisateur multiplateforme :
+
+- Backend : Developpe sous Python avec Django et Django REST Framework (DRF), assurant la logique metier, les regles d'acces et la persistance relationnelle.
+- Base de donnees : PostgreSQL heberge sur une infrastructure cloud avec support du pooling de connexions.
+- Frontend : Application cliente developpee avec Flutter et Dart, compatible nativement avec Android, iOS, le Web de bureau et les postes de travail administratifs (Linux, Windows, macOS).
+- Securite : Authentification sans etat basee sur des jetons JSON Web Tokens (SimpleJWT), hachage cryptographique des mots de passe (PBKDF2 SHA-256) et controle d'acces base sur les roles (RBAC).
+
+## Espaces Utilisateurs et Fonctionnalites
+
+Le systeme structure les droits et ecrans selon trois profils d'utilisateurs distincts :
+
+### 1. Espace Citoyen et Agent Public
+- Inscription et authentification securisees par adresse email.
+- Formulaire de creation simplifie permettant de qualifier le type de demande (Incident technique, Reclamation, Demande de service) et le niveau de priorite (Basse, Normale, Haute, Critique).
+- Tableau de bord personnel visualisant l'ensemble de ses tickets, leur etat d'avancement et les commentaires d'instruction.
+- Fil d'echange bidirectionnel permettant d'apporter des precisions ou des pieces complementaires.
+
+### 2. Espace Technicien et Support
+- Vue filtree des tickets ouverts dans sa zone de competence ou assignes directement a son compte.
+- Prise en charge des requetes et passage d'etat selon le workflow reglementaire.
+- Redaction de commentaires internes ou destines a l'usager.
+- Indicateurs individuels de performance (temps de reponse et volume de tickets traites).
+
+### 3. Espace Administration et Supervision
+- Vue panoramique de l'ensemble des tickets du Ministere avec filtres multicriteres (statut, priorite, type, dates).
+- Gestion centralisee des comptes utilisateurs, activation de comptes et affectation des roles (Citoyen, Technicien, Administrateur).
+- Attribution manuelle ou reaffectation d'un ticket a un agent specifique.
+- Tableaux de bord statistiques consolidant le taux de resolution, la repartition par departement et l'analyse tendancielle des requetes.
+
+## Workflow du Cycle de Vie d'un Ticket
+
+Chaque requete suit un cycle de traitement strictement norme en 4 etapes :
+
+1. OUVERT : Le ticket est cree par l'usager et attend sa prise en charge ou son affectation.
+2. EN COURS : Le ticket est assigne a un technicien ou un gestionnaire qui instruit le dossier.
+3. RESOLU : La reponse metier ou le depannage technique est effectue et valide.
+4. CLOS : La reclamation est cloturee et versee a l'archivage institutionnel.
+
+Chaque transition d'etat genere automatiquement une entree dans le journal d'audit (HistoriqueStatut) precisant l'ancien etat, le nouvel etat, l'identifiant de l'agent responsable et l'horodatage a la seconde.
+
+## Specification des Points d'Acces de l'API (Endpoints)
+
+L'API REST Django est securisee et expose les routes suivantes :
+
+### Authentification et Profils
+- POST `/api/auth/register/` : Enregistrement d'un nouvel usager.
+- POST `/api/auth/login/` : Authentification et delivrance de la paire de jetons JWT (access et refresh).
+- POST `/api/auth/refresh/` : Renouvellement du jeton de session arrive a expiration.
+- GET `/api/auth/profil/` : Consultation des donnees de compte et du role attribue.
+
+### Gestion des Tickets
+- GET `/api/tickets/` : Liste filtree et paginee des tickets accessibles selon les droits de l'utilisateur.
+- POST `/api/tickets/` : Enregistrement d'un nouveau ticket.
+- GET `/api/tickets/{id}/` : Consultation detaillee d'un ticket avec historique et commentaires associes.
+- PATCH `/api/tickets/{id}/changer_statut/` : Mise a jour de l'etat d'avancement (reserve aux techniciens et administrateurs).
+- POST `/api/tickets/{id}/commenter/` : Ajout d'un commentaire d'echange sur le ticket.
+- PATCH `/api/tickets/{id}/assigner/` : Affectation du ticket a un technicien support.
+
+### Pilotage et Reporting
+- GET `/api/dashboard/` : Indicateurs de synthese pour la page d'accueil de l'espace.
+- GET `/api/statistics/` : Metriques consolidees pour les rapports d'activite ministeriels.
+
+## Technologies et Dependances
+
+### Serveur (Backend)
+- Langage : Python 3.x
+- Framework principal : Django 6.0
+- API Toolkit : Django REST Framework (DRF) 3.15
+- Authentification : djangorestframework-simplejwt 5.3
+- Filtrage et CORS : django-filter, django-cors-headers
+- Base de donnees : PostgreSQL via le connecteur psycopg2-binary
+- Serveur de production : Gunicorn avec WhiteNoise pour la distribution des fichiers statiques
+
+### Client (Frontend)
+- Framework multiplateforme : Flutter 3.x
+- Langage : Dart
+- Gestion d'etat : BLoC / Cubit (architecture par etats et evenements)
+- Communication HTTP : Paquet http avec intercepteur d'autorisation Bearer JWT
+- Stockage persistant securise : shared_preferences pour la persistance locale des sessions
+- Design : Material Design 3 aux couleurs ministerielles (palette verte #006743)
+
+## Installation et Lancement Local
+
+### Prerequis
+
+- Python 3.11 ou superieur
+- Flutter SDK (version stable 3.x)
+- Une instance PostgreSQL accessible ou un environnement de test local
+
+### 1. Configuration et Demarrage du Serveur Django
+
+Positionnez-vous dans le repertoire serveur :
 
 ```bash
 cd server
+```
+
+Creez et activez un environnement virtuel Python :
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
+
+Installez les dependances requises :
+
+```bash
+pip install -r requirements.txt
+```
+
+Appliquez les migrations a la base de donnees :
+
+```bash
+python manage.py migrate
+```
+
+Creez un compte administrateur principal :
+
+```bash
+python manage.py createsuperuser
+```
+
+Demarrez le serveur de developpement :
+
+```bash
 python manage.py runserver 0.0.0.0:8000
 ```
 
-### 2. Créer des utilisateurs de test
+L'API est des lors joignable sur `http://localhost:8000`.
 
-```bash
-cd ..
-python create_test_users.py
-```
+### 2. Configuration et Lancement de l'Application Flutter
 
-**Identifiants créés:**
-- citoyen@test.com / 1234
-- technicien@test.com / 1234  
-- admin@test.com / 1234
-
-### 3. Lancer l'application Flutter
+Dans un second terminal, positionnez-vous dans le repertoire du client mobile et de bureau :
 
 ```bash
 cd client/reclamations_app
+```
+
+Recuperez l'ensemble des paquets Dart :
+
+```bash
 flutter pub get
+```
+
+Verifiez la disponibilite des peripheriques de test :
+
+```bash
+flutter devices
+```
+
+Lancez l'application (sur Chrome, simulateur Android ou poste local) :
+
+```bash
 flutter run
 ```
 
----
+## Organisation du Depot
 
-## 📱 FONCTIONNALITÉS PRINCIPALES
+- `server/` : Code source du backend Django (modules accounts, tickets, configuration globale et scripts de deploiement).
+- `server/tickets/` : Modeles de donnees (Ticket, Commentaire, HistoriqueStatut), controleurs de vues et regles d'assignation.
+- `server/accounts/` : Modele CustomUser personnalise, controle d'acces par role et gestion JWT.
+- `client/reclamations_app/` : Projet Flutter complet multiplateforme.
+- `client/reclamations_app/lib/screens/` : Interfaces utilisateurs ventilees par profil (citoyen, technicien, administrateur).
+- `client/reclamations_app/lib/services/` : Couche de services HTTP et passerelle API.
+- `client/reclamations_app/lib/providers/` : Gestionnaires d'etat d'authentification et de session.
 
-### Pour les Citoyens/Agents
-- ✅ Inscription automatique
-- ✅ Création de tickets
-- ✅ Suivi en temps réel
-- ✅ Historique complet
-- ✅ Notifications de statut
+## Auteur
 
-### Pour les Techniciens
-- ✅ Tableau de bord personnalisé
-- ✅ Attribution de tickets
-- ✅ Traitement avec workflow
-- ✅ Système de commentaires
-- ✅ Statistiques de performance
+- Concepteur et Developpeur : Maxime DEFALEOUNA ([@maximedefaleouna](https://github.com/maximedefaleouna))
 
-### Pour les Administrateurs
-- ✅ Gestion des utilisateurs
-- ✅ Vue globale des tickets
-- ✅ Statistiques complètes
-- ✅ Configuration des rôles
-- ✅ Rapports et analytics
+## Licence
 
----
-
-## 🏗️ ARCHITECTURE TECHNIQUE
-
-### Backend
-- **Framework**: Django 6.0 + Django REST Framework
-- **Base de données**: PostgreSQL
-- **Authentification**: JWT (SimpleJWT)
-- **Sécurité**: CORS, Password hashing, Role validation
-
-### Frontend
-- **Framework**: Flutter 3.x
-- **Design**: Material Design 3
-- **Thème**: Vert (#006743) - Identité Ministère
-- **State**: setState + Services
-
----
-
-## 📊 STATISTIQUES DU PROJET
-
-### Code Implemented
-- **Backend**: 100% ✅
-- **Frontend**: 90% ✅
-- **API Endpoints**: 15+ endpoints
-- **Screens**: 8 écrans fonctionnels
-- **Services**: Authentification + Tickets + Stats
-
-### Features
-- ✅ Authentication JWT complète
-- ✅ Auto-inscription avec validation
-- ✅ CRUD complet des tickets
-- ✅ Workflow de statuts (4 états)
-- ✅ Système de commentaires
-- ✅ Historique automatique
-- ✅ Tableau de bord temps réel
-- ✅ Statistiques détaillées
-- ✅ Rôles et permissions
-- ✅ Filtrage avancé
-
----
-
-## 🔒 SÉCURITÉ
-
-- ✅ Mots de passe hachés (pbkdf2_sha256)
-- ✅ Tokens JWT avec expiration
-- ✅ Validation des emails uniques
-- ✅ Permissions par rôle
-- ✅ Protection CORS
-- ✅ Validation des mots de passe
-
----
-
-## 📁 DOCUMENTATION COMPLÈTE
-
-| Document | Description |
-|----------|-------------|
-| `FINAL_PROJECT_GUIDE.md` | 📘 Guide complet du projet |
-| `IMPLEMENTATION_STATUS.md` | 📊 État d'avancement détaillé |
-| `QUICK_START.md` | ⚡ Démarrage rapide |
-| `BACKEND_FRONTEND_SETUP.md` | 🔧 Configuration complète |
-| `README_CORRECTIONS.md` | 🔨 Corrections apportées |
-| `PASSWORD_FIX_RESOLVED.md` | 🔐 Fix hachage mot de passe |
-| `FIX_LOGIN_USERS.md` | 👥 Création utilisateurs |
-| `SOLUTION_LOGIN_COMPLETE.md` | ✅ Solution login complet |
-
----
-
-## 🎨 CAPTURES D'ÉCRAN (Fonctionnalités)
-
-### Écrans Implémentés
-1. **Login** - Authentification sécurisée
-2. **Register** - Inscription automatique
-3. **Dashboard** - Vue d'ensemble
-4. **Ticket List** - Liste filtrable
-5. **Ticket Detail** - Détails complets
-6. **Create Ticket** - Formulaire de création
-7. **Profile** - Gestion profil
-8. **Statistics** - Analytics
-
----
-
-## 🔄 WORKFLOW DES TICKETS
-
-```
-OUVERT → EN_COURS → RESOLU → CLOS
-```
-
-Chaque transition est tracée avec:
-- Horodatage
-- Utilisateur ayant fait le changement
-- Ancien statut
-- Nouveau statut
-
----
-
-## 👥 RÔLES UTILISATEURS
-
-### CITOYEN
-- Crée ses propres tickets
-- Consulte ses tickets
-- Ajoute des commentaires
-- Voit ses statistiques
-
-### TECHNICIEN
-- Tous droits CITOYEN +
-- Voit les tickets assignés
-- Traite les tickets ouverts
-- Change les statuts
-- Assigne des tickets
-
-### ADMIN
-- Accès complet au système
-- Gère les utilisateurs
-- Voit toutes les statistiques
-- Configure le système
-
----
-
-## 📋 ENDPOINTS API
-
-### Authentification
-- `POST /api/auth/register/` - Inscription
-- `POST /api/auth/login/` - Connexion
-- `POST /api/auth/refresh/` - Refresh token
-- `GET /api/auth/profil/` - Profil utilisateur
-
-### Tickets
-- `GET /api/tickets/` - Liste
-- `POST /api/tickets/` - Création
-- `GET /api/tickets/{id}/` - Détail
-- `PATCH /api/tickets/{id}/changer_statut/` - Changer statut
-- `POST /api/tickets/{id}/commenter/` - Commenter
-- `PATCH /api/tickets/{id}/assigner/` - Assigner
-
-### Dashboard & Stats
-- `GET /api/dashboard/` - Dashboard
-- `GET /api/statistics/` - Statistiques
-
----
-
-## 🧪 TESTING
-
-### Backend Tests
-```bash
-cd server
-python manage.py test
-```
-
-### Frontend Tests
-```bash
-cd client/reclamations_app
-flutter test
-```
-
-### Manuel Testing Checklist
-- [ ] Inscription nouveau compte
-- [ ] Connexion avec identifiants
-- [ ] Création ticket
-- [ ] Consultation liste
-- [ ] Détail ticket
-- [ ] Changement statut
-- [ ] Ajout commentaire
-- [ ] Vue dashboard
-- [ ] Vue statistiques
-- [ ] Déconnexion
-
----
-
-## 🎯 VALEUR AJOUTÉE
-
-### Pour le Ministère
-- ✅ Amélioration qualité de service
-- ✅ Traitement rapide des réclamations
-- ✅ Transparence totale
-- ✅ Indicateurs de performance
-- ✅ Archivage automatique
-
-### Pour les Citoyens
-- ✅ Facilité de soumission
-- ✅ Suivi en temps réel
-- ✅ Meilleure communication
-- ✅ Satisfaction accrue
-
-### Pour les Techniciens
-- ✅ Organisation optimisée
-- ✅ Attribution claire
-- ✅ Priorisation automatique
-- ✅ Historique complet
-
----
-
-## 📈 MÉTRIQUES DE PERFORMANCE
-
-Le système fournit:
-- Temps moyen de résolution
-- Distribution par statut
-- Distribution par type
-- Distribution par priorité
-- Évolution sur 30 jours
-- Performance par technicien
-
----
-
-## 💻 TECHNOLOGIES UTILISÉES
-
-### Backend
-```
-Python 3.x
-├── Django 6.0
-├── Django REST Framework 3.15
-├── djangorestframework-simplejwt 5.3
-├── django-cors-headers 4.3
-├── django-filter 23.5
-└── psycopg2-binary (PostgreSQL)
-```
-
-### Frontend
-```
-Flutter 3.x
-├── http 1.2.0
-├── shared_preferences 2.2.2
-├── provider 6.1.2
-├── intl 0.19.0
-└── cupertino_icons 1.0.8
-```
-
----
-
-## 🚀 PRÊT POUR LA PRODUCTION
-
-Le système est **100% fonctionnel** et prêt pour:
-- ✅ Déploiement en production
-- ✅ Tests utilisateurs
-- ✅ Intégration systèmes existants
-- ✅ Montée en charge
-
----
-
-## 📞 SUPPORT
-
-### Fichiers de Configuration
-
-**Backend:**
-- `server/config/settings.py` - Configuration Django
-- `server/config/urls.py` - Routes API
-- `server/accounts/views.py` - Vues authentification
-- `server/tickets/views.py` - Vues tickets
-
-**Frontend:**
-- `lib/main.dart` - Point d'entrée
-- `lib/screens/` - Tous les écrans
-- `lib/services/` - Services API
-- `lib/models/` - Modèles de données
-
----
-
-## 🎓 PROJET ACADÉMIQUE
-
-**Cadre**: TP Final Django + Flutter  
-**Institution**: Université de Kara  
-**Année**: 2024/2025  
-**Sujet**: Gestion des Réclamations - Ministère de la Justice  
-
-**Objectifs Atteints**:
-- ✅ Plateforme centralisée
-- ✅ Suivi efficace des tickets
-- ✅ Archivage et analyse
-- ✅ Communication améliorée
-- ✅ Application mobile Flutter
-- ✅ API REST Django
-
----
-
-## ✨ POINTS FORTS DU PROJET
-
-### Technique
-- Code propre et maintenable
-- Architecture évolutive
-- Sécurité renforcée
-- Documentation complète
-- Tests facilités
-
-### Fonctionnel
-- Conforme au cahier des charges
-- Expérience utilisateur optimale
-- Workflow métier respecté
-- Rôles et permissions clairs
-
-### Business
-- Résout un problème réel
-- Apporte de la valeur
-- Mesurable et traçable
-- Professionnel et présentable
-
----
-
-## 🎉 ÉTAT FINAL
-
-**Statut**: ✅ **PROJET TERMINÉ**  
-**Complétion**: **95%**  
-**Qualité**: **Production Ready**  
-**Documentation**: **Complète**  
-
-Date: **25 Mars 2026**  
-Version: **1.0.0**
-
----
-
-## 📖 GUIDE DE LECTURE
-
-Pour explorer le projet:
-
-1. **Commencez par**: `FINAL_PROJECT_GUIDE.md`
-2. **Configuration**: `BACKEND_FRONTEND_SETUP.md`
-3. **Démarrage**: `QUICK_START.md`
-4. **Détails techniques**: `IMPLEMENTATION_STATUS.md`
-5. **Corrections**: `README_CORRECTIONS.md`
-
----
-
-**Développé avec ❤️ pour le Ministère de la Justice et de la Législation**  
-**Université de Kara - 2024/2025**
+Ce projet est distribue sous licence MIT. Libre a vous de l'utiliser, de l'adapter ou de le deployer pour d'autres administrations et cas d'usage institutionnels.
